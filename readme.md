@@ -7,3 +7,5 @@
 При первом запуске предложит сгенерировать токен
 
 ----
+
+![example](https://github.com/fortael/tgrabber/blob/master/example.gif?raw=true)
