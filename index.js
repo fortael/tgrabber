@@ -16,29 +16,17 @@ import tgrabberParser from './tgrabberParser';
 
 let tmpDir = path.join(__dirname, 'tmp');
 
-//Open your group statistics to get real id
-//открой стастику группы чтобы получить реальный id
-let groupId = '125235721';
-
-
-//https://vk.com/apps?act=manage
-let clientId = 5560324;
-let secret = 'gzVHmSWTU4phzBuJIRaN';
-
-let defaultTags = [
-    'stevenuniverse'
-];
-
-const VK = new VKsdk({
-    appId: clientId,
-    appSecret: secret
-});
 //noinspection JSUnresolvedFunction
 const argv = require('yargs')
     .usage('$0 <cmd> [args]')
     .option('link', {
         alias: 'l',
         describe: 'link to tumbler post',
+        type: 'string'
+    })
+    .option('group', {
+        alias: 'g',
+        describe: 'group id (you can find it in group statistics)',
         type: 'string'
     })
     .option('debug', {
@@ -49,6 +37,21 @@ const argv = require('yargs')
     })
     .help('help')
     .argv;
+
+//Open your group statistics to get real id
+//открой стастику группы чтобы получить реальный id
+const groupId = Config.get('groupId');
+
+//https://vk.com/apps?act=manage
+const clientId = Config.get('clientId');
+const secret = Config.get('clientSecret');
+
+const defaultTags = Config.get('defaultTags');
+
+const VK = new VKsdk({
+    appId: clientId,
+    appSecret: secret
+});
 
 function getRow(file) {
     return file + '';
