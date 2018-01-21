@@ -40,3 +40,4 @@
     npm run start
 
 ![example](https://github.com/fortael/tgrabber/blob/master/example.gif?raw=true)
+![example](https://github.com/fortael/tgrabber/blob/master/screenshot.png?raw=true)
