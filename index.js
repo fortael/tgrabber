@@ -4,10 +4,11 @@ import readline from "readline";
 import path from "path";
 import http from "http";
 import chalk from "chalk";
+import Configstore from "configstore";
 
 import VKsdk from 'vksdk';
 
-const Configstore = require('configstore');
+const LocalConfig = require('./config.json');
 const Config = new Configstore('config.json');
 
 import tgrabberUtils from './tgrabberUtils';
@@ -40,17 +41,16 @@ const argv = require('yargs')
 
 //Open your group statistics to get real id
 //открой стастику группы чтобы получить реальный id
-const groupId = Config.get('groupId');
+const groupId = LocalConfig.groupId;
 
 //https://vk.com/apps?act=manage
-const clientId = Config.get('clientId');
-const secret = Config.get('clientSecret');
+const clientId = LocalConfig.clientId;
 
-const defaultTags = Config.get('defaultTags');
+const defaultTags = LocalConfig.defaultTags;
 
 const VK = new VKsdk({
     appId: clientId,
-    appSecret: secret
+    appSecret: LocalConfig.clientSecret
 });
 
 function getRow(file) {
@@ -170,6 +170,8 @@ async function repost(err, scope) {
         }
 
         await tgrabberHelpers.post(VK, attachments, scope.tags, groupId);
+
+        argv.l = null;
 
         start();
     });
