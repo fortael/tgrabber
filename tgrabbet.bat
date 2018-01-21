@@ -1,2 +1,2 @@
-node index.js --harmony
+npm run start
 PAUSE
