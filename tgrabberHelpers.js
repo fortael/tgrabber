@@ -1,48 +1,34 @@
-import open from "open";
-import chalk from "chalk";
+import async from "async";
 
 export default {
-    async getLink(rl) {
+    async post(VK, attachments, tags, groupId) {
         return new Promise((resolve) => {
-            rl.question(chalk.bold.cyan('Ссылка на пост tumblr: '), (answer) => {
-                return resolve(answer);
+            VK.request('wall.post', {
+                owner_id: -groupId,
+                from_group: 1,
+                message: tags,
+                attachments: attachments
+            }, function (res) {
+                return resolve(res.response.post_id);
             });
         });
     },
-    /**
-     *
-     * @param clientId - ID приложения ВК которые делает посты
-     * @param rl - readline instance
-     * @returns {Promise<any>}
-     */
-    async getToken(clientId, rl) {
-        console.log(chalk.bold.cyan('Сейчас откроется браузер. Прими запрос и скопируй ссылку в консоль'));
-
-        setTimeout(function () {
-            open('https://oauth.vk.com/authorize?client_id=' + clientId + '&scope=status,offline,wall,photos,groups&response_type=token');
-        }, 3000);
-
+    async saveUploadedPhotos(VK, data, sourceLink) {
         return new Promise((resolve) => {
-            rl.question('Ссылка: ', async (answer) => {
-
-
-                answer = answer.split('&');
-
-                let token = false;
-
-                for (let i = 0, l = answer.length; i < l; i++) {
-                    if (answer[i].indexOf('access_token')) {
-                        token = answer[i].split('=').pop();
-                        break;
-                    }
+            VK.request('photos.saveWallPhoto', data, function (res) {
+                let attachments = '';
+                let serverData = res.response;
+                if (typeof serverData !== "object") {
+                    serverData = [serverData];
                 }
 
-                if (token === false) {
-                    console.log(chalk.bold.red('Не удалось определить токен'));
-                    return false;
-                }
+                serverData.forEach(function (photo) {
+                    attachments += 'photo' + photo.owner_id + '_' + photo.id + ','
+                });
+                attachments += '[source]' + sourceLink + ',';
+                attachments += sourceLink;
 
-                return resolve(token);
+                resolve(attachments);
             });
         });
     }
