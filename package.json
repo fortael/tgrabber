@@ -1,28 +1,31 @@
 {
   "private": true,
   "name": "tgrabber",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Copy tumbler posts to vk",
   "main": "index.js",
   "author": "fortael <fortael@yahoo.com>",
   "license": "ISC",
   "scripts": {
-    "start": "node index.js"
+    "start": "babel-node index.js --link=http://steven-universe-fanart.tumblr.com/post/169960890949/jod-the-cod-lars-of-the-stars-a-steven"
   },
   "dependencies": {
     "async": "^2.0.1",
     "chalk": "^1.1.3",
     "cheerio": "^0.20.0",
+    "configstore": "^3.1.1",
     "fs": "0.0.2",
     "http": "0.0.0",
-    "nconf": "^0.8.4",
+    "lodash": "^4.17.4",
     "open": "0.0.5",
     "readline": "^1.3.0",
     "request": "^2.74.0",
     "restler": "^3.4.0",
-    "trim": "0.0.1",
     "vksdk": "^5.3.2",
     "yargs": "latest"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1"
+  }
 }

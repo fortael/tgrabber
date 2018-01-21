@@ -1,29 +1,36 @@
-let fs = require('fs');
-let nconf = require('nconf');
-let async = require('async');
-let readline = require('readline');
-let open = require('open');
-let request = require('request');
-let cheerio = require('cheerio');
-let trim = require('trim');
-let path = require('path');
-let http = require('http');
-let chalk = require('chalk');
-let restler = require('restler');
+import fs from "fs";
+import async from "async";
+import readline from "readline";
+import request from "request";
+import cheerio from "cheerio";
+import path from "path";
+import http from "http";
+import chalk from "chalk";
+import restler from "restler";
+import _ from 'lodash';
 
-let tmpDir = path.join(__dirname, 'tmp');
-
-let groupId = '';
-let clientId = '';
-let secret = '';
-
-let VKsdk = require('vksdk');
-let vk = new VKsdk({
+import VKsdk from 'vksdk';
+const VK = new VKsdk({
     appId: clientId,
     appSecret: secret
 });
 
-vk.setSecureRequests(true);
+const Configstore = require('configstore');
+const Config = new Configstore('config.json');
+
+import tgrabberHelpers from './tgrabberHelpers';
+
+let tmpDir = path.join(__dirname, 'tmp');
+
+//Open your group statistics to get real id
+//открой стастику группы чтобы получить реальный id
+let groupId = '125235721';
+
+
+//https://vk.com/apps?act=manage
+let clientId = '5560324';
+let secret = 'gzVHmSWTU4phzBuJIRaN';
+
 
 //noinspection JSUnresolvedFunction
 const argv = require('yargs')
@@ -46,94 +53,56 @@ function getRow(file) {
     return file + '';
 }
 
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-nconf.file({
-    file: getRow(path.join(__dirname, 'config.json')),
-    secure: {
-        secret: 'TgRaBBer_$alt8312894',
-        alg: 'aes-256-ctr'
-    }
-});
-
-/**
- * Heat-up
- */
-function startUp() {
-    let tasks = [];
-    let token;
-    nconf.get('token', function (err, TOKEN) {
-        if (typeof TOKEN === "undefined") {
-            tasks.push(function (cb) {
-                console.log(chalk.bold.cyan('Сейчас откроется браузер. Прими запрос и скопируй ссылку.'));
-                setTimeout(function () {
-                    open('https://oauth.vk.com/authorize?client_id=' + clientId + '&scope=status,offline,wall,photos,groups&response_type=token');
-                    rl.question('Ссылка: ', (answer) => {
-                        answer = answer.split('&');
-
-                        let token = false;
-                        for (let i = 0, l = answer.length; i < l; i++) {
-                            if (answer[i].indexOf('access_token')) {
-                                token = answer[i].split('=').pop();
-                                break;
-                            }
-                        }
-
-                        if (token === false) {
-                            console.log(chalk.bold.red('Не удалось определить токен'));
-                            return false;
-                        }
-
-                        nconf.set('token', token);
-                        nconf.save();
-                        cb(null);
-                    });
-                }, 3000);
-            });
-        }
-
-        if (typeof argv.l === "undefined" || argv.l === null) {
-            tasks.push(function (done) {
-                rl.question(chalk.bold.cyan('Ссылка на пост tumblr: '), (answer) => {
-                    argv.l = answer;
-                    return done(null);
-                });
-            });
-        }
-
-        async.waterfall(tasks, start);
-    });
-}
-
-function start() {
-    rl.close();
-    vk.setToken(nconf.get('token'));
-
-    request(argv.l, function (err, res, body) {
-
-        let $ = cheerio.load(body);
-        let $2 = false;
-
-        let photoset = $('iframe.photoset');
-
-        if (photoset.length <= 0) {
-            return parse([$]);
-        }
-
-        request(photoset.attr('src'), function (err2, res2, body2) {
-            console.log(chalk.cyan('Углубленный поиск'));
-            $2 = cheerio.load(body2);
-            parse([$, $2]);
-        });
-
-    });
-}
-
 function parseTag(tag) {
     return tag.replace(/ /g, '').replace('#', '').replace('\'', '').replace('`', '');
+}
+
+async function start() {
+
+    // console.log(1);
+    // Config.clear();
+
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    const token = Config.get('token');
+
+    if (typeof token === "undefined" || token === null) {
+        Config.set('token', await tgrabberHelpers.getToken(clientId, rl))
+    }
+
+    if (typeof argv.l === "undefined" || argv.l === null) {
+        argv.l = await tgrabberHelpers.getLink(rl);
+    }
+
+    rl.close();
+
+
+
+    console.log(chalk.cyan('Поиск данных на странице'));
+
+    return new Promise((resolve => {
+        request(argv.l, function (err, res, body) {
+
+            let $ = cheerio.load(body);
+            let $2 = false;
+
+            let photoset = $('iframe.photoset');
+
+            //usually pages contains inside <iframe> tag
+            if (photoset.length <= 0) {
+                return resolve(parse([$]));
+            }
+
+            request(photoset.attr('src'), function (err2, res2, body2) {
+                $2 = cheerio.load(body2);
+                return resolve(parse([$, $2]));
+            });
+
+        });
+    }))
 }
 
 function parse(scope) {
@@ -192,6 +161,8 @@ function parse(scope) {
 }
 
 function ready(err, scope) {
+    VK.setSecureRequests(true);
+
     if (argv.d) {
         console.log(scope);
     }
@@ -208,10 +179,19 @@ function ready(err, scope) {
             console.log(chalk.green('Скачивание картинок для отправки в вк'));
             let list = [];
 
+            if (!fs.existsSync(tmpDir)){
+                fs.mkdirSync(tmpDir);
+            }
+
             async.each(scope.images, function (item, done) {
-                let short = item.split('/').pop(),
-                    file = getRow(path.join(tmpDir, short)),
-                    stream = fs.createWriteStream(file);
+                // console.log(item)
+
+                let short = item.split('/').pop();
+                let file = getRow(path.join(tmpDir, short));
+                let stream = fs.createWriteStream(file);
+
+                console.log(file);
+
 
                 http.get(item, function (response) {
                     console.log(chalk.green('Файл загружен') + ' - ' + short);
@@ -224,16 +204,17 @@ function ready(err, scope) {
                     });
                 });
             }, function () {
+                console.log(chalk.green('Файлы загружены:') + ' ' + scope.images.length);
                 return cb(null, list);
             });
         },
         vk: function (cb) {
             console.log('Подготовка сервера для загрузки');
 
-            vk.request('photos.getWallUploadServer', {group_id: groupId}, function (res) {
-                // console.log(res);
-                return cb(null, res.response.upload_url);
-            });
+            // VK.request('photos.getWallUploadServer', {group_id: groupId}, function (res) {
+            //     console.log('Сервер для загрузки найден');
+            //     return cb(null, res.response.upload_url);
+            // });
         }
     }, repost);
 }
@@ -256,7 +237,7 @@ function repost(err, scope) {
                 return callback(null, answer);
             });
 
-        /*Картинки загрузжены подготовка поста*/
+            /*Картинки загрузжены подготовка поста*/
         }, function (answer, cb) {
             console.log(chalk.blue('Загружены'));
             if (argv.d) {
@@ -331,7 +312,9 @@ function repost(err, scope) {
         return startUp();
     });
 }
-startUp();
+
+start();
+
 module.exports = {
     assets: "./tmp/*.*",
     dirs: [
