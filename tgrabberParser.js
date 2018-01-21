@@ -1,6 +1,7 @@
 import cheerio from "cheerio";
 import request from "request";
 import chalk from "chalk";
+import _ from "lodash";
 import async from "async";
 
 function parseTag(tag) {
@@ -32,7 +33,7 @@ export default {
             });
         })
     },
-    async getTags(scope) {
+    async getTags(scope, defaultTags = []) {
         console.log('Поиск тегов на странице');
 
         return new Promise((resolve)=> {
@@ -56,7 +57,11 @@ export default {
                 });
             }
 
-            //todo:push default tags
+            _.each(defaultTags, (item) => {
+                if (!tags.includes(item)) {
+                    tags.unshift(item)
+                }
+            });
 
             return resolve(tags);
         });

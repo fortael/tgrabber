@@ -25,6 +25,10 @@ let groupId = '125235721';
 let clientId = 5560324;
 let secret = 'gzVHmSWTU4phzBuJIRaN';
 
+let defaultTags = [
+    'stevenuniverse'
+];
+
 const VK = new VKsdk({
     appId: clientId,
     appSecret: secret
@@ -76,7 +80,7 @@ async function start() {
 
     console.log(chalk.cyan('Поиск данных на странице'));
     const scope = {
-        tags: await tgrabberParser.getTags($),
+        tags: await tgrabberParser.getTags($, defaultTags),
         images: await tgrabberParser.getImages($)
     };
 
@@ -162,7 +166,9 @@ async function repost(err, scope) {
             return false;
         }
 
-        tgrabberHelpers.post(VK, attachments, scope.tags, groupId);
+        await tgrabberHelpers.post(VK, attachments, scope.tags, groupId);
+
+        start();
     });
 
     return false;
