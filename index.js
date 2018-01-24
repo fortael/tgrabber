@@ -151,24 +151,20 @@ async function repost(err, scope) {
     tgrabberUtils.postFiles(scope.vk, scope.images, async (err, httpResponse, answer) => {
         console.log(chalk.blue('Загружены'));
 
+        tgrabberHelpers.clearFiles(scope.images);
+
         //if it's debug mode
         if (argv.d) {
             console.log(answer);
+            return false;
         }
 
         let data = JSON.parse(answer);
         data.group_id = groupId;
 
-        console.log(chalk.blue('Сохранение загруженных файлов в ВК'));
-        const attachments = await tgrabberHelpers.saveUploadedPhotos(VK, data, argv.l);
-
         console.log(chalk.blue('Поиск паролей и пин-кодов на компьюетере'));
         console.log(chalk.blue('Публикация поста'));
-        if (argv.d) {
-            //exit if this is debug mode
-            return false;
-        }
-
+        const attachments = await tgrabberHelpers.saveUploadedPhotos(VK, data, argv.l);
         await tgrabberHelpers.post(VK, attachments, scope.tags, groupId);
 
         argv.l = null;

@@ -1,6 +1,12 @@
-import async from "async";
+import _ from 'lodash';
+import fs from 'fs';
 
 export default {
+    async clearFiles(scope) {
+        _.each(scope, (item) => {
+            fs.unlinkSync(item.file);
+        });
+    },
     async post(VK, attachments, tags, groupId) {
         return new Promise((resolve) => {
             VK.request('wall.post', {
