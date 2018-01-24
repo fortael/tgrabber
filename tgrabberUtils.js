@@ -14,9 +14,17 @@ export default {
     },
     async getLink(rl) {
         return new Promise((resolve) => {
-            rl.question(chalk.bold.cyan('Ссылка на пост tumblr: '), (answer) => {
-                return resolve(answer);
-            });
+            let ask = () => {
+                rl.question(chalk.bold.cyan('Ссылка на пост tumblr: '), (answer) => {
+                    if (!answer.includes('http')) {
+                        console.log(chalk.bold.red('Неправильная ссылка!'));
+                        return ask();
+                    }
+                    return resolve(answer);
+                });
+            };
+
+            ask();
         });
     },
     /**
