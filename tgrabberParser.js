@@ -80,7 +80,15 @@ export default {
                     return resolve([$]);
                 }
 
-                request(photoset.attr('src'), function (err2, res2, body2) {
+                let subframe = photoset.attr('src');
+
+                if (!subframe.includes('tumblr.com')) {
+                    let address = _.first(link.match(/http:\/\/[a-z].+\.tumblr\.com/ig));
+
+                    subframe = address + subframe;
+                }
+
+                request(subframe, function (err2, res2, body2) {
                     $2 = cheerio.load(body2);
                     return resolve([$, $2]);
                 });
