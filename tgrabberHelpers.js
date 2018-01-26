@@ -8,10 +8,10 @@ export default {
         });
     },
     async post(VK, attachments, tags, groupId) {
-        return new Promise((resolve, reject) => {
-            let time = Date.now() / 1000;
-            let diff = time + (86400 * 10); //now + 10 days
+        let time = Math.floor(Date.now() / 1000);
+        let diff = time + (86400 * 3);
 
+        return new Promise((resolve, reject) => {
             VK.request('wall.post', {
                 owner_id: -groupId,
                 from_group: 1,
@@ -22,6 +22,8 @@ export default {
                 let id = _.get(res.response, 'post_id');
 
                 if (id && id !== null) {
+                    time = null;
+
                     return resolve(id);
                 }
 
