@@ -8,14 +8,26 @@ export default {
         });
     },
     async post(VK, attachments, tags, groupId) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
+            let time = Date.now() / 1000;
+            let diff = time + (86400 * 10); //now + 10 days
+
             VK.request('wall.post', {
                 owner_id: -groupId,
                 from_group: 1,
+                publish_date: diff,
                 message: tags,
                 attachments: attachments
             }, function (res) {
-                return resolve(res.response.post_id);
+                let id = _.get(res.response, 'post_id');
+
+                if (id && id !== null) {
+                    return resolve(id);
+                }
+
+                console.log(res);
+
+                return reject(res);
             });
         });
     },
