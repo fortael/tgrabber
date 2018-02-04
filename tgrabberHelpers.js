@@ -1,32 +1,44 @@
 import _ from 'lodash';
 import fs from 'fs';
 
+let publishTime = 0;
+
 export default {
     async clearFiles(scope) {
         _.each(scope, (item) => {
             fs.unlinkSync(item.file);
         });
     },
-    async post(VK, attachments, tags, groupId) {
-        let time = Math.floor(Date.now() / 1000);
-        let diff = time + (86400 * 3);
+    async post(VK, attachments, tags, groupId, moreTime = 0) {
+        let time;
+
+        if (publishTime === 0) {
+            time = Math.floor(Date.now() / 1000);
+            publishTime = time + (86400 * 3) + moreTime;
+        }
+
 
         return new Promise((resolve, reject) => {
             VK.request('wall.post', {
                 owner_id: -groupId,
                 from_group: 1,
-                publish_date: diff,
+                publish_date: publishTime,
                 message: tags,
                 attachments: attachments
             }, function (res) {
                 let id = _.get(res.response, 'post_id');
 
                 if (id && id !== null) {
-                    time = null;
+                    publishTime += 120;
 
                     return resolve(id);
                 }
 
+                if (parseInt(_.get(res, 'error.error_code')) === 241) {
+                    return this.post(VK, attachments, tags, groupId, 120);
+                }
+
+                console.log(_.get(res, 'error.error_code'));
                 console.log(res);
 
                 return reject(res);
